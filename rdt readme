@@ -1,0 +1,6 @@
+This code is a simple modification of the stop and wait class provided.
+I made a header that is placed infront of the body of the message from the sender to the reciver.
+The reciver can take of the header whitch is a set amount of digits and verifiy that the packet was transfered reliablebly.
+The header has a sequencing number first
+Then the header has a five digit checksum value. I wrote my own method (SumOfBytes()) witch adds up all the bytes in a payload.
+when passing in this checksum value extra zeros are added to the front to make the checksum a constant 5 digits.

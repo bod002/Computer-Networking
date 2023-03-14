@@ -1,0 +1,286 @@
+"""
+Created on Sat Mar 11 14:54:11 2023
+
+@author: footf
+"""
+
+import sys
+import argparse
+import socket
+import time
+import threading
+import statistics
+import random
+import string
+
+starting_point = 0
+
+parser = argparse.ArgumentParser(description = "traffic genorator")
+
+parser.add_argument("protocol", help="protocol to send packet (udp or tcp)")
+parser.add_argument("disteribution", help="disteribution to send packets (burst or uniform)")   
+parser.add_argument("--size", help="size of packets in bytes", type=int, default=1)    
+parser.add_argument("--band", help="packets per second of the traffic to generate", type=int, default=1)   
+parser.add_argument("--dura", help="Duration to run in seconds", type=int, default=2)   
+
+args = parser.parse_args()
+print(args.protocol, args.disteribution, args.size, args.band, args.dura)
+print("-"*40) #spacing
+
+#used to send tcp packet with threading
+def sendPacket(packet, echoDest_ip, echoDest_port, packSize):
+    #create tcp socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect(echoDest_ip, echoDest_port)
+    # Send the packet
+    sock.sendall(packet)
+    # Receive the response
+    response = sock.recv(packSize)
+    # Close the socket
+    sock.close()
+
+
+if args.protocol == "udp":
+    if args.disteribution == "uniform":
+    
+        #set IP and port of dest
+        echoDest_ip = '134.82.173.242'
+        echoDest_port = 8888
+    
+        #determined packet size in bytes (int)
+        packSize = args.size
+        
+        #determined uniform sending rate
+        packPerSec = args.band
+        
+        #create udp socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        #socket wil timeout after 1 second
+        sock.settimeout(1)
+        
+        #creat counters
+        count1 = 0
+        count2 = 0
+        count3 = 0
+        RTT = []
+        
+        #send packets contuniously for the determined amount of time
+        start_time = time.time()
+        while time.time() - start_time < args.dura:
+            #genrate random bytes of determined size for packet data
+            randomString = ''.join(random.choice(string.ascii_letters) for i in range(packSize))
+            packData = bytes(randomString,'utf-8')
+            
+            # Send the packet
+            sock.sendto(packData, (echoDest_ip, echoDest_port))
+            print(f"Sent packet {count1 + 1}")#.format(count1 + 1))
+            count1 = count1 + 1
+            sendTime = time.time()
+            
+            # Wait for the predetermined time to maintain the sending rate
+            time.sleep(1 / packPerSec)
+            
+            # Receive the response
+            response, address = sock.recvfrom(packSize)
+            print(f"Received response {(count2 + 1)}: {response.decode()}")#.format(count2 + 1), response.decode())
+            count2 = count2 + 1
+            recvTime = time.time()
+            
+            #check for out of order, assuming no bit errors
+            if packData != response:
+                count3 = count3 + 1
+            
+            #calc round trip time
+            rtt = recvTime - sendTime
+            RTT.append(rtt)
+
+        # Close the socket
+        sock.close()
+        print("loss rate: {}%, out of order rate: {}%"
+              .format(((count1-count2)/count1)*100, (count3/count1)*100))
+        print("RTT: mean = {}s, median = {}s, min = {}s, max = {}s"
+              .format(statistics.mean(RTT), statistics.median(RTT), min(RTT), max(RTT)))
+        
+        
+    if args.disteribution == "burst":
+        #set IP and port of dest
+        echoDest_ip = '134.82.173.242'
+        echoDest_port = 8888
+    
+        #determined packet size in bytes (int)
+        packSize = args.size
+        
+        #determine 100 packet burst sending rate (time to wait after 100 packets)
+        secPer100Pac = 100/args.band
+        
+        #create udp socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        #socket wil timeout after 1 second
+        sock.settimeout(1)
+        
+        #creat counters
+        count1 = 0
+        count2 = 0
+        count3 = 0
+        RTT = []
+        
+        #send packets contuniously for the determined amount of time
+        start_time = time.time()
+        while time.time() - start_time < args.dura:
+            for i in range(100):
+                #genrate random bytes of determined size for packet data
+                randomString = ''.join(random.choice(string.ascii_letters) for i in range(packSize))
+                packData = bytes(randomString,'utf-8')
+            
+                # Send the packet
+                sock.sendto(packData, (echoDest_ip, echoDest_port))
+                print(f"Sent packet {count1 + 1}")#.format(count1 + 1))
+                count1 = count1 + 1
+                sendTime = time.time()
+            
+                # no Wait time between burst mode packets
+                # Receive the response
+                response, address = sock.recvfrom(packSize)
+                print(f"Received response {(count2 + 1)}: {response.decode()}")#.format(count2 + 1), response.decode())
+                count2 = count2 + 1
+                recvTime = time.time()
+
+                #check for out of order, assuming no bit errors
+                if packData != response:
+                    count3 = count3 + 1
+
+                #calc round trip time
+                rtt = recvTime - sendTime
+                RTT.append(rtt)
+            
+            #wait time assumes burst mode packet sent in negliable amount of time
+            time.sleep(secPer100Pac)
+
+        # Close the socket
+        sock.close()
+        print("loss rate: {}%, out of order rate: {}%"
+              .format(((count1-count2)/count1)*100, (count3/count1)*100))
+        print("RTT: mean = {}s, median = {}s, min = {}s, max = {}s"
+              .format(statistics.mean(RTT), statistics.median(RTT), min(RTT), max(RTT)))
+
+
+if args.protocol == "tcp":
+    if args.disteribution == "uniform":
+        #set IP and port of dest
+        echoDest_ip = '134.82.173.242'
+        echoDest_port = 1234
+        
+        #determined packet size in bytes (int)
+        packSize = args.size
+        
+        #determined uniform sending rate
+        packPerSec = args.band
+
+        #create tcp socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_adress = (echoDest_ip, echoDest_port)
+        sock.connect(server_adress)
+        
+        #creat counters
+        count1 = 0
+        count2 = 0
+        count3 = 0
+        RTT = []
+        
+        #send packets contuniously for the determined amount of time
+        start_time = time.time()
+        while time.time() - start_time < args.dura:
+            #genrate random bytes of determined size for packet data
+            randomString = ''.join(random.choice(string.ascii_letters) for i in range(packSize))
+            packData = bytes(randomString,'utf-8')
+        
+            # send the packet (no extra threading, all in one thread)
+            sock.sendall(packData)
+            print(f"Sent packet {count1 + 1}")#.format(count1 + 1))
+            count1 = count1 + 1
+            sendTime = time.time()
+            
+            # Wait for the predetermined time to maintain the sending rate
+            time.sleep(1 / packPerSec)
+    
+            # receive the response
+            response = sock.recv(packSize)
+            print(f"Received response {(count2 + 1)}: {response.decode()}")#.format(count2 + 1), response.decode())
+            count2 = count2 + 1
+            recvTime = time.time()
+                            
+            #check for out of order, assuming no bit errors
+            if packData != response:
+                count3 = count3 + 1
+
+            #calc round trip time
+            rtt = recvTime - sendTime
+            RTT.append(rtt)
+                
+        # close the socket
+        sock.close()
+        print("loss rate: {}%, out of order rate: {}%"
+              .format(((count1-count2)/count1)*100, (count3/count1)*100))
+        print("RTT: mean = {}s, median = {}s, min = {}s, max = {}s"
+              .format(statistics.mean(RTT), statistics.median(RTT), min(RTT), max(RTT)))
+    
+    
+    if args.disteribution == "burst":
+        #set IP and port of dest
+        echoDest_ip = '134.82.173.242'
+        echoDest_port = 1234
+        
+        #determined packet size in bytes (int)
+        packSize = args.size
+        
+        #determine 100 packet burst sending rate (time to wait after 100 packets)
+        secPer100Pac = 100/args.band
+        
+        #create tcp socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_adress = (echoDest_ip, echoDest_port)
+        sock.connect(server_adress)
+        
+        #creat counters and RTT list
+        count1 = 0
+        count2 = 0
+        count3 = 0
+        RTT = []
+        
+        #send packets contuniously for the determined amount of time
+        start_time = time.time()
+        while time.time() - start_time < args.dura:
+            for i in range(100):
+                #genrate random bytes of determined size for packet data
+                randomString = ''.join(random.choice(string.ascii_letters) for i in range(packSize))
+                packData = bytes(randomString,'utf-8')
+                
+                # send the packet (no extra threading, all in one thread)
+                sock.sendall(packData)
+                print(f"Sent packet {count1 + 1}")#.format(count1 + 1))
+                count1 = count1 + 1
+                sendTime = time.time()
+            
+                # receive the response
+                response = sock.recv(packSize)
+                print(f"Received response {(count2 + 1)}: {response.decode()}")#.format(count2 + 1), response.decode())
+                count2 = count2 + 1
+                recvTime = time.time()
+            
+                #check for out of order, assuming no bit errors
+                if packData != response:
+                    count3 = count3 + 1
+            
+                #calc round trip time
+                rtt = recvTime - sendTime
+                RTT.append(rtt)
+                
+            #wait time assumes burst mode packet sent in negliable amount of time
+            time.sleep(secPer100Pac)
+    
+        # close the socket
+        sock.close()
+        print("loss rate: {}%, out of order rate: {}%"
+              .format(((count1-count2)/count1)*100, (count3/count1)*100))
+        print("RTT: mean = {}s, median = {}s, min = {}s, max = {}s"
+              .format(statistics.mean(RTT), statistics.median(RTT), min(RTT), max(RTT)))

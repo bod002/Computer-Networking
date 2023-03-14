@@ -1,0 +1,25 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Mar  9 10:32:52 2023
+
+@author: footf
+"""
+
+import socket
+
+def echo():
+
+    # Create a UDP socket object
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    # Bind the socket to a specific IP address and port number
+    server_address = ("0.0.0.0", 8888)
+    sock.bind(server_address)
+
+    # Receive and echo back packets
+    while True:
+        data, address = sock.recvfrom(1024)  # receive a packet of up to 1024 bytes
+        print(f"Received {len(data)} bytes from {address}, response: {data.decode()}")
+        sock.sendto(data, address)  # echo back the received packet to the sender
+
+echo()

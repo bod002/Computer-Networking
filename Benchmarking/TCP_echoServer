@@ -1,0 +1,43 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Mar  9 10:45:31 2023
+
+@author: footf
+"""
+
+import socket
+
+def echo():
+    
+    # set up IP and port #
+    Host = '0.0.0.0'
+    Port = 1234
+    
+    # Create a UDP socket object
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    
+    # Bind the socket to the specified IP address and port number
+    sock.bind((Host, Port))
+
+    # Set the socket to listen for incoming connections
+    sock.listen()
+
+    # Wait for a client to connect and accept the connection
+    print("Waiting for connection...")
+    client_sock, client_address = sock.accept()
+    print(f"Connected to client {client_address}")
+
+    #recive data from client    
+    while True:
+
+        data = client_sock.recv(1024)  # Receive up to 1024 bytes of data
+        client_sock.send(data)
+        if not data:  # If no data is received, the connection has been closed
+            break
+        print(f"Received: {data.decode()}")  # Decode the received data and print it
+        
+    # Close the connection
+    client_sock.close()
+    sock.close()
+
+echo()

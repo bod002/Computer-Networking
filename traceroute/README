@@ -1,0 +1,10 @@
+All of the altercations I have made from the origional code are in the ping.py file.
+This program can effectivly find the trace route by sending pings that consits of packets with a 8 byte header. 
+Packets are send in ICMP to each step or "hop" along the way to the destination. 
+After each hop a response is sent back to the program including information about the tracerout.
+Becuase I am no longer working with rtt in this program, the statistics portion of the program was scraped.
+
+
+To run this program enter into the comand line:
+
+sudo python3 ping.py [host] --num [max number of hops]

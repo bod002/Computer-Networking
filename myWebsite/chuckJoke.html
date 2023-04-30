@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chuck Norris Jokes</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+  <h1>Chuck Norris Jokes</h1>
+  <p>this is my spanking new website hope you love it</p>
+  <img src="https://images01.military.com/sites/default/files/styles/full/public/2021-04/chucknorris.jpeg.jpg" alt="chuck norris"/>
+  <label for="category">Select a Category:</label>
+
+  <select id="category">
+    <option value="">Random</option>
+    <option value="dev">Computer Scince</option>
+    <option value="movie">Movie</option>
+    <option value="food">Food</option>
+  </select>
+
+  <button onclick="getChuckNorrisJoke()">Get Joke</button>
+  <p id="joke"></p>
+
+  <script>
+    function getChuckNorrisJoke() {
+      var selectedCategory = $("#category").val();
+      var apiUrl = "https://api.chucknorris.io/jokes/random";
+      
+      if (selectedCategory !== "") {
+        apiUrl += "?category=" + selectedCategory;
+      }
+      $.ajax({
+        url: apiUrl,
+        method: "GET",
+        success: function(response) {
+          $("#joke").text(response.value);
+        },
+        error: function() {
+          $("#joke").text("Failed to retrieve Chuck Norris joke.");
+        }
+      });
+    }
+  </script>
+</body>
+</html>

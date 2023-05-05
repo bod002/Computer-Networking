@@ -1,0 +1,36 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed May  3 12:13:22 2023
+
+@author: footf
+
+dose not operate with POST messagess
+Handle cache invalidation
+Error handling: Implement appropriate error handling for scenarios like network failures, invalid requests, or server errors
+"""
+
+import requests
+import random
+import string
+
+url = 'http://localhost:8000'
+headers = {'Content-Type': 'text/plain', 'Authorization': 'Bearer your_access_token'}
+
+# Generate random text
+def generate_random_text(length):
+    letters = string.ascii_letters
+    return ''.join(random.choice(letters) for _ in range(length))
+
+# Send a GET request with random text
+random_text = generate_random_text(10)
+response = requests.get(url, data=random_text, headers=headers)
+print("2")
+# enterpret presons code
+if response.status_code == 200:
+    ms = "ACK, (retrived)"
+else:
+    ms = "NAK, (already in cashe)"
+
+# Print the response code and body
+print('Response Code:', ms)
+print('Response Body:', response.text)
